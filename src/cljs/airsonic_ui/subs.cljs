@@ -2,20 +2,13 @@
   (:require [re-frame.core :as re-frame :refer [subscribe]]
             [airsonic-ui.utils.api :as api]))
 
-(defn is-booting?
-  "Predicate to tell whether our app is still in the process of initialization"
-  [{:keys [credentials]} _]
-  (and (not (map? credentials))
-       (not (#{:credentials/not-found :credentials/verification-failure :credentials/logged-out} credentials))))
-
+(defn is-booting? [db _] (:is-booting? db))
 (re-frame/reg-sub ::is-booting? is-booting?)
 
 ;; can be used to query the user's credentials
 
-(re-frame/reg-sub
- ::credentials
- (fn [db _]
-   (:credentials db)))
+(defn credentials [db _] (:credentials db))
+(re-frame/reg-sub ::credentials credentials)
 
 (re-frame/reg-sub
  ::user
@@ -65,7 +58,5 @@
 
 ;; user notifications
 
-(re-frame/reg-sub
- ::notifications
- (fn [db _]
-   (:notifications db)))
+(defn notifications [db _] (:notifications db))
+(re-frame/reg-sub ::notifications notifications)

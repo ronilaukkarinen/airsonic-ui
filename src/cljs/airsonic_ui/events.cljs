@@ -24,85 +24,86 @@
 ;; * sending out the appropriate requests
 ;; ---
 
+(defn initialize-app
+  [{{:keys [credentials]} :store} _]
+  {:db (-> db/default-db
+           (assoc :credentials credentials)
+           (assoc-in [:credentials :verified?] false))
+        :dispatch [:credentials/verify]
+        :routes/start-routing nil})
+
 (re-frame/reg-event-fx
  ::initialize-app
- (fn [_]
-   {:db db/default-db
-    :dispatch [:init-flow/restore-previous-session]}))
-
-(defn restore-previous-session
-  "See comment above for different steps; what's important here is that we check
-  for a previous session before anything else, otherwise we might run into auth
-  troubles with our router."
-  [{:keys [db store]} _]
-  (let [credentials (:credentials store)]
-    {:dispatch-n [(if credentials
-                    [:init-flow/credentials-found credentials]
-                    [:init-flow/credentials-not-found])]
-     :routes/start-routing nil}))
-
-(re-frame/reg-event-fx
- :init-flow/restore-previous-session
  [(re-frame/inject-cofx :store)]
- restore-previous-session)
+ initialize-app)
 
-(defn credentials-found [_ [_ {:keys [u p server]}]]
-  {:dispatch [:credentials/verification-request u p server]})
-
-(re-frame/reg-event-fx :init-flow/credentials-found credentials-found)
-
-;; we don't do anything special here, it's just for the sake of clarity
-
-(defn credentials-not-found
+(defn verify-credentials
+  "Verifies our db locally for stored credentials"
   [cofx _]
-  (assoc-in cofx [:db :credentials] :credentials/not-found))
+  (let [credentials (get-in cofx [:db :credentials])]
+    ;; TODO: spec this
+    (if (and (string? (:u credentials))
+             (string? (:p credentials))
+             (string? (:server credentials)))
+      {:dispatch [:credentials/send-authentication-request credentials]}
+      (update cofx :db dissoc :is-booting?))))
 
-(re-frame/reg-event-fx :init-flow/credentials-not-found credentials-not-found)
+(re-frame/reg-event-fx :credentials/verify verify-credentials)
 
 ;; ---
 ;; auth logic
 ;; ---
 
-(defn credentials-verification-request
+(defn user-login
+  "Gets called after the user clicked on the login button"
+  [cofx [_ user pass server]]
+  (let [credentials {:u user, :p pass, :server server, :verified? false}]
+    (-> (assoc-in cofx [:db :credentials] credentials)
+        (assoc :dispatch [:credentials/send-authentication-request credentials]))))
+
+(re-frame/reg-event-fx :credentials/user-login user-login)
+
+(defn authentication-request
   "Tries to authenticate a user by pinging the server with credentials, saving
   them when the request was successful. Bypasses the request when a user saved
   their credentials."
-  [_ [_ user pass server]]
-  {:http-xhrio {:method :get
-                :uri (api/url server "ping" {:u user :p pass})
-                :response-format (ajax/json-response-format {:keywords? true})
-                :on-success [:credentials/verification-response user pass server]
-                :on-failure [:credentials/verification-failure]}})
+  [cofx [_ credentials]]
+  (assoc cofx :http-xhrio {:method :get
+                           :uri (api/url (:server credentials) "ping" (select-keys credentials [:u :p]))
+                           :response-format (ajax/json-response-format {:keywords? true})
+                           :on-success [:credentials/authentication-response]
+                           :on-failure [:api/bad-response]}))
 
-(re-frame/reg-event-fx :credentials/verification-request credentials-verification-request)
+(re-frame/reg-event-fx :credentials/send-authentication-request authentication-request)
 
-(defn credentials-verification-response
+(defn authentication-response
   "Since we don't get real status codes, we have to look into the server's
   response and see whether we actually sent the correct credentials"
-  [fx [_ user pass server response]]
-  {:dispatch (if (api/is-error? response)
-               [:credentials/verification-failure response]
-               [:credentials/verified user pass server])})
+  [fx [_ response]]
+  (assoc fx :dispatch (if (api/is-error? response)
+                        [:credentials/authentication-failure response]
+                        [:credentials/authentication-success])))
 
-(re-frame/reg-event-fx :credentials/verification-response credentials-verification-response)
+(re-frame/reg-event-fx :credentials/authentication-response authentication-response)
 
-(defn credentials-verification-failure [fx [_ response]]
-  (-> (assoc-in fx [:db :credentials] :credentials/verification-failure)
-      (assoc :dispatch [:notification/show :error (api/error-msg (api/->exception response))])))
+(defn authentication-failure [fx [_ response]]
+  (-> (assoc fx :dispatch [:notification/show :error (api/error-msg (api/->exception response))])
+      (assoc-in [:db :is-booting?] false)))
 
-(re-frame/reg-event-fx :credentials/verification-failure credentials-verification-failure)
+(re-frame/reg-event-fx :credentials/authentication-failure authentication-failure)
 
-(defn credentials-verified
+(defn authentication-success
   "Gets called after the server indicates that the credentials entered by a user
   are correct (see `credentials-verification-request`)"
-  [{:keys [db]} [_ user pass server]]
-  (let [credentials {:u user :p pass :server server}]
+  [{:keys [db]} _]
+  (let [credentials (:credentials db)]
     {:routes/set-credentials credentials
-     :store {:credentials credentials}
-     :db (assoc db :credentials credentials)
+     :store {:credentials (dissoc credentials :verified?)}
+     :db (-> (assoc db :is-booting? false)
+             (assoc-in [:credentials :verified?] true))
      :dispatch [::logged-in]}))
 
-(re-frame/reg-event-fx :credentials/verified credentials-verified)
+(re-frame/reg-event-fx :credentials/authentication-success authentication-success)
 
 ;; TODO: We have to find another solution for this once we have routes that
 ;; don't require a login but have the bottom controls
@@ -111,7 +112,6 @@
  :show-nav-bar
  (fn [_]
    (.. js/document -documentElement -classList (add "has-navbar-fixed-bottom"))))
-
 
 (defn logged-in
   [cofx _]
