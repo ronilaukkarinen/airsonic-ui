@@ -52,20 +52,18 @@
 (defn app [route params query]
   (let [user @(subscribe [::subs/user])
         content @(subscribe [::subs/current-content])]
-    (if (= route ::routes/login)
-      [login-form]
-      [:div
-       [:main.columns
-        [:div.column.is-2.sidebar
-         [sidebar user]]
-        [:div.column
-         [:section.section
-          [breadcrumbs content]
-          (case route
-            ::routes/main [most-recent content]
-            ::routes/artist-view [artist-detail content]
-            ::routes/album-view [album-detail content])]]]
-       [bottom-bar]])))
+    [:div
+     [:main.columns
+      [:div.column.is-2.sidebar
+       [sidebar user]]
+      [:div.column
+       [:section.section
+        [breadcrumbs content]
+        (case route
+          ::routes/main [most-recent content]
+          ::routes/artist-view [artist-detail content]
+          ::routes/album-view [album-detail content])]]]
+     [bottom-bar]]))
 
 (defn main-panel []
   (let [notifications @(subscribe [::subs/notifications])
@@ -75,4 +73,6 @@
      [notification-list notifications]
      (if is-booting?
        [:div.app-loading>div.loader]
-       [app route params query] )]))
+       (case route
+         ::routes/login [login-form]
+         [app route params query]))]))

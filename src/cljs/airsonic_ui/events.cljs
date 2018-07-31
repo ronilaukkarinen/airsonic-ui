@@ -97,8 +97,8 @@
   are correct (see `credentials-verification-request`)"
   [{:keys [db]} _]
   (let [credentials (:credentials db)]
-    {:routes/set-credentials credentials
-     :store {:credentials (dissoc credentials :verified?)}
+    {:store {:credentials (when (map? credentials)
+                            (dissoc credentials :verified?))}
      :db (-> (assoc db :is-booting? false)
              (assoc-in [:credentials :verified?] true))
      :dispatch [::logged-in]}))
@@ -115,8 +115,9 @@
 
 (defn logged-in
   [cofx _]
-  (let [redirect (or (get-in cofx [:routes/from-query-param :redirect]) [::routes/main])]
-    {:routes/navigate redirect
+  (let [redirect (or (get-in cofx [:routes/from-query-param :redirect])
+                     [::routes/main])]
+    {:dispatch [:routes/do-navigation redirect]
      :show-nav-bar nil}))
 
 (re-frame/reg-event-fx
@@ -128,12 +129,12 @@
   "Clears all credentials and redirects the user to the login page"
   [cofx [_ & args]]
   (let [args (apply hash-map args)]
-    {:routes/navigate (if-let [redirect (:redirect-to args)]
-                        [::routes/login {} {:redirect (routes/encode-route redirect)}]
-                        [::routes/login])
-     :routes/unset-credentials nil
+    {:dispatch [:routes/do-navigation (if-let [redirect (:redirect-to args)]
+                                        [::routes/login {} {:redirect (routes/encode-route redirect)}]
+                                        [::routes/login])]
      :store nil
-     :db (merge (:db cofx) db/default-db {:credentials :credentials/logged-out})}))
+     :db (-> (merge (:db cofx) db/default-db)
+             (dissoc :credentials))}))
 
 (re-frame/reg-event-fx ::logout logout)
 
@@ -223,8 +224,9 @@
 ;; ---
 
 (re-frame/reg-event-fx
- :routes/navigation
+ :routes/did-navigate
  (fn [{:keys [db]} [_ route params query]]
+   ;; FIXME: This leads to an ugly "unregistered event handler `nil`" error
    ;; all the naviagation logic is in routes.cljs; all we need to do here
    ;; is say what actually happens once we've navigated succesfully
    {:db (assoc db :current-route [route params query])

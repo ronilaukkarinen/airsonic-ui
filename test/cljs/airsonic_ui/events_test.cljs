@@ -116,9 +116,7 @@
     (testing "Should clear all stored data"
       (is (nil? (:store fx))))
     (testing "Should redirect to the login screen"
-      (is (= [::routes/login] (:routes/navigate fx))))
-    (testing "Should unset authentication in the router"
-      (is (contains? fx :routes/unset-credentials)))
+      (is (= [::routes/login] (:routes/do-navigation fx))))
     (testing "Should reset the app-db"
       (is (= (every? #(= (get db/default-db %) (get-in fx [:db %])) (keys db/default-db))))))
   (testing "Should be able to keep a redirection parameter"
