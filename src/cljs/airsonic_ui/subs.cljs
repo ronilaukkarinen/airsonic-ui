@@ -2,10 +2,16 @@
   (:require [re-frame.core :as re-frame :refer [subscribe]]
             [airsonic-ui.utils.api :as api]))
 
-(defn is-booting? [db _] (:is-booting? db))
-(re-frame/reg-sub ::is-booting? is-booting?)
+(defn is-booting?
+  "The boot process starts with setting up routing and continues if we found
+  previous credentials and ends when we receive a response from the server."
+  [db _]
+  ;; so either we don't have any credentials or they are not verified
+  (or (empty? (:current-route db))
+      (and (not (empty? (:credentials db)))
+           (not (get-in db [:credentials :verified?])))))
 
-;; can be used to query the user's credentials
+(re-frame/reg-sub ::is-booting? is-booting?)
 
 (defn credentials [db _] (:credentials db))
 (re-frame/reg-sub ::credentials credentials)

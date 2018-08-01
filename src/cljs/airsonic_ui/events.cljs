@@ -26,11 +26,11 @@
 
 (defn initialize-app
   [{{:keys [credentials]} :store} _]
-  {:db (-> db/default-db
-           (assoc :credentials credentials)
-           (assoc-in [:credentials :verified?] false))
-        :dispatch [:credentials/verify]
-        :routes/start-routing nil})
+  (let [effects {:db db/default-db
+                 :routes/start-routing nil}]
+    (if (not (empty? credentials))
+      (assoc effects :dispatch [:credentials/verify credentials])
+      effects)))
 
 (re-frame/reg-event-fx
  ::initialize-app
@@ -38,15 +38,12 @@
  initialize-app)
 
 (defn verify-credentials
-  "Verifies our db locally for stored credentials"
-  [cofx _]
-  (let [credentials (get-in cofx [:db :credentials])]
-    ;; TODO: spec this
-    (if (and (string? (:u credentials))
-             (string? (:p credentials))
-             (string? (:server credentials)))
-      {:dispatch [:credentials/send-authentication-request credentials]}
-      (update cofx :db dissoc :is-booting?))))
+  "Initializes the whole authentication chain when we have locally stored
+  credentials that look plausible."
+  [_ [_ credentials]]
+  ;; TODO: spec this
+  (if (every? string? ((juxt :u :p :server) credentials))
+    {:dispatch [:credentials/send-authentication-request credentials]}))
 
 (re-frame/reg-event-fx :credentials/verify verify-credentials)
 
@@ -71,7 +68,7 @@
   (assoc cofx :http-xhrio {:method :get
                            :uri (api/url (:server credentials) "ping" (select-keys credentials [:u :p]))
                            :response-format (ajax/json-response-format {:keywords? true})
-                           :on-success [:credentials/authentication-response]
+                           :on-success [:credentials/authentication-response credentials]
                            :on-failure [:api/bad-response]}))
 
 (re-frame/reg-event-fx :credentials/send-authentication-request authentication-request)
@@ -79,29 +76,29 @@
 (defn authentication-response
   "Since we don't get real status codes, we have to look into the server's
   response and see whether we actually sent the correct credentials"
-  [fx [_ response]]
+  [fx [_ credentials response]]
   (assoc fx :dispatch (if (api/is-error? response)
                         [:credentials/authentication-failure response]
-                        [:credentials/authentication-success])))
+                        [:credentials/authentication-success (assoc credentials :verified? true)])))
 
 (re-frame/reg-event-fx :credentials/authentication-response authentication-response)
 
-(defn authentication-failure [fx [_ response]]
+(defn authentication-failure
+  "Removes all stored credentials and displays potential api errors to the user"
+  [fx [_ response]]
   (-> (assoc fx :dispatch [:notification/show :error (api/error-msg (api/->exception response))])
-      (assoc-in [:db :is-booting?] false)))
+      (update :store dissoc :credentials)
+      (update :db dissoc :credentials)))
 
 (re-frame/reg-event-fx :credentials/authentication-failure authentication-failure)
 
 (defn authentication-success
   "Gets called after the server indicates that the credentials entered by a user
   are correct (see `credentials-verification-request`)"
-  [{:keys [db]} _]
-  (let [credentials (:credentials db)]
-    {:store {:credentials (when (map? credentials)
-                            (dissoc credentials :verified?))}
-     :db (-> (assoc db :is-booting? false)
-             (assoc-in [:credentials :verified?] true))
-     :dispatch [::logged-in]}))
+  [{:keys [db]} [_ credentials]]
+  {:store {:credentials credentials}
+   :db (assoc db :credentials (assoc credentials :verified? true))
+   :dispatch [::logged-in]})
 
 (re-frame/reg-event-fx :credentials/authentication-success authentication-success)
 

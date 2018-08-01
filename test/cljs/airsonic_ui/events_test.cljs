@@ -25,57 +25,40 @@
                                   [::subs/notifications])))
     (is (map? (subs/notifications (:db (has-previous-session))
                                   [::subs/notifications]))))
-  (testing "Should restore previous credentials of there are any"
-    (is (nil? (subs/credentials (get-in (no-previous-session) [:db :credentials]) [::subs/credentials])))
-    (is (true? (dispatches? (no-previous-session) :credentials/verify)))
-    (is (true? (dispatches? (has-previous-session) :credentials/verify)))
-    (testing "and mark them as unverified"
-      (let [unmarked (has-previous-session)
-            ;; in case somebody tries to be clever and change localstorage:
-            manually-marked (-> {:store {:credentials (assoc fixtures/credentials :verified? true)}}
-                                (events/initialize-app [::events/initialize-app]))]
-        (is (= (assoc fixtures/credentials :verified? false)
-               (subs/credentials (:db unmarked) [::subs/credentials])
-               (subs/credentials (:db manually-marked) [::subs/credentials]))))))
+  (testing "Should set up the default database")
+  (testing "Should initialize credential verification"
+    (is (false? (dispatches? (no-previous-session) :credentials/verify)))
+    (is (true? (dispatches? (has-previous-session) [:credentials/verify fixtures/credentials]))))
   (testing "Should initialize the router"
     (is (contains? (no-previous-session) :routes/start-routing))
-    (is (contains? (has-previous-session) :routes/start-routing)))
-  (testing "Should show the app as booting"
-    (is (true? (subs/is-booting? (:db (no-previous-session)) [::subs/is-booting?])))
-    (is (true? (subs/is-booting? (:db (has-previous-session)) [::subs/is-booting?])))))
+    (is (contains? (has-previous-session) :routes/start-routing))))
 
 (deftest credential-verification
   (testing "Should fail when there are no credentials"
-    (let [cofx (-> (no-previous-session)
-                   (events/verify-credentials [:credentials/verify]))]
-      (is (false? (boolean (subs/is-booting? (:db cofx) [::subs/is-booting?]))))))
+    (is (false? (dispatches? (-> (no-previous-session)
+                                 (events/verify-credentials [:credentials/verify nil])) [::subs/is-booting?]))))
   (testing "Should happen server-side when we have credentials"
     (let [cofx (-> (has-previous-session)
-                   (events/verify-credentials [:credentials/verify]))]
+                   (events/verify-credentials [:credentials/verify fixtures/credentials]))]
       (is (true? (dispatches? cofx :credentials/send-authentication-request)))))
   (testing "Should verify the structure of credentials"
-    (let [empty-creds (-> {:store {:credentials {}}})]
-      (is (false? (boolean (dispatches? empty-creds :credentials/send-authentication-request))))
-      (is (false? (boolean (subs/is-booting? (:db empty-creds) [::subs/is-booting])))))
-    (let [malformed (-> {:store {:credentials {:xyz #{12 34 56}}}})]
-      (is (false? (boolean (dispatches? malformed :credentials/send-authentication-request))))
-      (is (false? (boolean (subs/is-booting? (:db malformed) [::subs/is-booting])))))))
+    (let [empty-creds  {:store {:credentials {}}}]
+      (is (false? (boolean (dispatches? empty-creds :credentials/send-authentication-request)))))
+    (let [malformed {:store {:credentials {:xyz #{12 34 56}}}}]
+      (is (false? (boolean (dispatches? malformed :credentials/send-authentication-request)))))))
 
 (deftest authentication-request
-  (let [credentials {:u "user",
-                     :p "pass",
-                     :server "http://localhost"}
-        event [:credentials/send-authentication-request credentials]
+  (let [event [:credentials/send-authentication-request fixtures/credentials]
         fx (events/authentication-request {} event)
         request (:http-xhrio fx)]
     (testing "uses correct server url"
       (let [uri (:uri request)]
-        (is (true? (str/starts-with? uri (:server credentials))))
+        (is (true? (str/starts-with? uri (:server fixtures/credentials))))
         (is (true? (str/includes? uri "/ping")))
-        (is (true? (str/includes? uri "p=pass")))
-        (is (true? (str/includes? uri "u=user")))))
+        (is (true? (str/includes? uri (str "p=" (:p fixtures/credentials)))))
+        (is (true? (str/includes? uri (str "u=" (:u fixtures/credentials)))))))
     (testing "invokes correct callback on server response"
-      (is (= [:credentials/authentication-response] (:on-success request))))
+      (is (= [:credentials/authentication-response fixtures/credentials] (:on-success request))))
     (testing "invokes correct callback when server is not reachable"
       (is (= [:api/bad-response] (:on-failure request))))))
 
@@ -84,20 +67,12 @@
     (let [cofx (-> (has-previous-session)
                    (events/authentication-response [:credentials/authentication-response (:auth-success fixtures/responses)])
                    (events/authentication-success [:credentials/authentication-success]))]
-      (testing "should finish the boot process"
-        (is (false? (boolean (subs/is-booting? (:db cofx) [::subs/is-booting?])))))
-      #_(testing "should redirect to the default page when there is no page mentioned in the navigation hash"
-          (is (true? (assoc cofx :routes/from-query-param {}))))
-      #_(testing "should redirect to the page given in our navigation hash"
-          (is (true? (assoc cofx :routes/from-query-param {:redirect [::routes/artist-view {:id 123} nil]}))))
       (testing "should mark the credentials as verified"
         (is (true? (get-in cofx [:db :credentials :verified?]))))))
   (testing "On failure"
     (let [cofx (-> (has-previous-session)
                    (events/authentication-response [:credentials/authentication-response (:auth-failure fixtures/responses)])
                    (events/authentication-failure [:credentials/authentication-failure (:auth-failure fixtures/responses)]))]
-      (testing "should finish the boot process"
-        (is (false? (boolean (subs/is-booting? (:db cofx) [::subs/is-booting?])))))
       (testing "should display a notification to the user"
         (is (true? (dispatches? cofx :notification/show)))))))
 
@@ -116,13 +91,16 @@
     (testing "Should clear all stored data"
       (is (nil? (:store fx))))
     (testing "Should redirect to the login screen"
-      (is (= [::routes/login] (:routes/do-navigation fx))))
+      (is (dispatches? fx [:routes/do-navigation [::routes/login]])))
     (testing "Should reset the app-db"
-      (is (= (every? #(= (get db/default-db %) (get-in fx [:db %])) (keys db/default-db))))))
+      (is (= db/default-db (:db fx)))))
   (testing "Should be able to keep a redirection parameter"
     (let [redirect [:route {:with-data #{1 2 3 4 5}}]
-          fx (events/logout {} [:_ :redirect-to redirect])]
-      (is (= [::routes/login {:redirect redirect}])))))
+          navigation-event (:dispatch (events/logout {} [:_ :redirect-to redirect]))]
+      (is (= :routes/do-navigation (first navigation-event)))
+      (let [[route-id _ query] (second navigation-event)]
+        (is (= ::routes/login route-id))
+        (is (contains? query :redirect))))))
 
 (defn- first-notification [fx]
   (-> (get-in fx [:db :notifications]) vals first))
