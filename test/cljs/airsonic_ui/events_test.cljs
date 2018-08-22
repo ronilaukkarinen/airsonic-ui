@@ -104,13 +104,6 @@
         (is (= ::routes/login route-id))
         (is (contains? query :redirect))))))
 
-(deftest api-interaction
-  (testing "Should show an error notification when airsonic responds with an error"
-    (let [fx (events/good-api-response {} [:_ (:error fixtures/responses)])
-          ev (:dispatch fx)]
-      (is (= :notification/show (first ev)))
-      (is (= :error (second ev))))))
-
 (defn- first-notification [fx]
   (-> (get-in fx [:db :notifications]) vals first))
 

@@ -1,7 +1,7 @@
 (ns airsonic-ui.subs-test
   (:require [cljs.test :refer [deftest testing is]]
             [airsonic-ui.fixtures :as fixtures]
-            [airsonic-ui.utils.api :as api]
+            [airsonic-ui.api.helpers :as api]
             [airsonic-ui.subs :as subs]))
 
 (deftest booting

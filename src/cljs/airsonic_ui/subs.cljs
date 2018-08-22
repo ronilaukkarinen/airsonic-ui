@@ -1,7 +1,6 @@
 (ns airsonic-ui.subs
   (:require [re-frame.core :as re-frame :refer [subscribe]]
-            [airsonic-ui.audio.playlist :as playlist]
-            [airsonic-ui.utils.api :as api]))
+            [airsonic-ui.api.helpers :as api]))
 
 (defn is-booting?
   "The boot process starts with setting up routing and continues if we found

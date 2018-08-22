@@ -3,7 +3,7 @@
             [ajax.core :as ajax]
             [airsonic-ui.routes :as routes]
             [airsonic-ui.db :as db]
-            [airsonic-ui.utils.api :as api]
+            [airsonic-ui.api.helpers :as api]
             [airsonic-ui.audio.playlist :as playlist]))
 
 (re-frame/reg-fx
@@ -136,37 +136,6 @@
 (re-frame/reg-event-fx ::logout logout)
 
 ;; ---
-;; api interaction
-;; ---
-
-(defn- api-url [db endpoint params]
-  (let [creds (:credentials db)]
-    (api/url (:server creds) endpoint (merge params (select-keys creds [:u :p])))))
-
-(defn api-request [{:keys [db]} [_ endpoint params]]
-  {:http-xhrio {:method :get
-                :uri (api-url db endpoint params)
-                :response-format (ajax/json-response-format {:keywords? true})
-                :on-success [:api/good-response]
-                :on-failure [:api/bad-response]}})
-
-(re-frame/reg-event-fx :api/request api-request)
-
-(defn good-api-response [fx [_ response]]
-  (try
-    (assoc-in fx [:db :response] (api/unwrap-response response))
-    (catch ExceptionInfo e
-      {:dispatch [:notification/show :error (api/error-msg e)]})))
-
-(re-frame/reg-event-fx :api/good-response good-api-response)
-
-(defn bad-api-response [db event]
-  {:log ["API call gone bad; are CORS headers missing? check for :status 0" event]
-   :dispatch [:notification/show :error "Communication with server failed. Check browser logs for details."]})
-
-(re-frame/reg-event-fx :api/bad-response bad-api-response)
-
-;; ---
 ;; musique
 ;; ---
 
@@ -241,14 +210,21 @@
 ;; routing
 ;; ---
 
+(defn- n-events?
+  "Predicate that tells us whether a vector is suitable for :dispatch-n"
+  [ev-vec]
+  (or (empty? ev-vec) (vector? (first ev-vec))))
+
+(defn- normalize-events
+  "Wraps an event vector if necessary so we can use it with :dispatch-n"
+  [ev-vec]
+  (if (n-events? ev-vec) ev-vec [ev-vec]))
+
 (re-frame/reg-event-fx
  :routes/did-navigate
  (fn [{:keys [db]} [_ route params query]]
-   ;; FIXME: This leads to an ugly "unregistered event handler `nil`" error
-   ;; all the naviagation logic is in routes.cljs; all we need to do here
-   ;; is say what actually happens once we've navigated succesfully
    {:db (assoc db :current-route [route params query])
-    :dispatch (routes/route-data route params query)}))
+    :dispatch-n (normalize-events (routes/route-events route params query))}))
 
 (re-frame/reg-event-fx
  :routes/unauthorized
