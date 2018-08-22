@@ -60,7 +60,7 @@
     (testing "invokes correct callback on server response"
       (is (= [:credentials/authentication-response fixtures/credentials] (:on-success request))))
     (testing "invokes correct callback when server is not reachable"
-      (is (= [:api/bad-response] (:on-failure request))))))
+      (is (= [:api/failed-response] (:on-failure request))))))
 
 (deftest authentication-response
   (testing "On success"

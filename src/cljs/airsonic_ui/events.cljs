@@ -69,7 +69,7 @@
                            :uri (api/url (:server credentials) "ping" (select-keys credentials [:u :p]))
                            :response-format (ajax/json-response-format {:keywords? true})
                            :on-success [:credentials/authentication-response credentials]
-                           :on-failure [:api/bad-response]}))
+                           :on-failure [:api/failed-response]})) ; <- we don't need endpoint and params here because the response is not cached
 
 (re-frame/reg-event-fx :credentials/send-authentication-request authentication-request)
 
