@@ -210,21 +210,11 @@
 ;; routing
 ;; ---
 
-(defn- n-events?
-  "Predicate that tells us whether a vector is suitable for :dispatch-n"
-  [ev-vec]
-  (or (empty? ev-vec) (vector? (first ev-vec))))
-
-(defn- normalize-events
-  "Wraps an event vector if necessary so we can use it with :dispatch-n"
-  [ev-vec]
-  (if (n-events? ev-vec) ev-vec [ev-vec]))
-
 (re-frame/reg-event-fx
  :routes/did-navigate
  (fn [{:keys [db]} [_ route params query]]
-   {:db (assoc db :current-route [route params query])
-    :dispatch-n (normalize-events (routes/route-events route params query))}))
+   {:db (assoc db :routes/current-route [route params query])
+    :dispatch-n (routes/route-events route params query)}))
 
 (re-frame/reg-event-fx
  :routes/unauthorized

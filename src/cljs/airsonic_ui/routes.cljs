@@ -21,26 +21,50 @@
 
 ;; which data should be requested for which route? can either be a vector or a function returning a vector
 
-(defmulti route-events
+(defmulti -route-events
   "Returns the events that take care of correct data being fetched."
   (fn [route-id & _] route-id))
 
-(defmethod route-events :default [route-id params query] nil)
+(defmethod -route-events :default [route-id params query] nil)
 
-(defmethod route-events ::main
+(defmethod -route-events ::main
   [route-id params query]
   [:api/request "getAlbumList2" {:type "recent"
                                  :size 18}])
 
-(defmethod route-events ::artist-view
+(defmethod -route-events ::artist-view
   [route-id params query]
   [:api/request "getArtist" (select-keys params [:id])])
 
-(defmethod route-events ::album-view
+(defmethod -route-events ::album-view
   [route-id params query]
   [:api/request "getAlbum" (select-keys params [:id])])
 
 ;; shouldn't need to change anything below
+
+(defn- n-events?
+  "Predicate that tells us whether a vector is suitable for :dispatch-n"
+  [ev-vec]
+  (or (vector? (first ev-vec))))
+
+(defn route-events
+  "Returns a normalized list of event vectors for a given route."
+  [route-id params query]
+  (let [ev-vec (-route-events route-id params query)]
+    (if (n-events? ev-vec) ev-vec [ev-vec])))
+
+;; subscription returning the matched route for the current hashbang
+
+(re-frame/reg-sub :routes/current-route (fn [db _] (:routes/current-route db)))
+
+;; NOTE: There is some duplication here. The route events are provided as a
+;; subscription but they are also invoked directly in events.cljs. It didn't
+;; seem to justify pulling in a whole library and we need it in our top most view
+
+(re-frame/reg-sub
+ :routes/events-for-current-route
+ (fn [db _] (re-frame/subscribe [:routes/current-route]))
+ (fn [current-route _] (apply route-events current-route)))
 
 ;; these are helper effects we can use to navigate; the first two manage an atom
 ;; holding credentials, which is necessary to restrict certain routes, and the

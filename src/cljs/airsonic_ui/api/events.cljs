@@ -30,7 +30,7 @@
 (defn good-api-response
   "Handles when the server responded. There could still be an error while
   processing the request on the server side which we have to account for."
-  [fx [_ response endpoint params]]
+  [fx [_ endpoint params response]]
   (let [response-cache (cons :db (cache-path endpoint params))]
     (try
       (assoc-in fx response-cache (api/unwrap-response response))

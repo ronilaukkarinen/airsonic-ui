@@ -1,5 +1,5 @@
 (ns airsonic-ui.subs
-  (:require [re-frame.core :as re-frame :refer [subscribe]]
+  (:require [re-frame.core :refer [reg-sub subscribe]]
             [airsonic-ui.api.helpers :as api]))
 
 (defn is-booting?
@@ -7,16 +7,16 @@
   previous credentials and ends when we receive a response from the server."
   [db _]
   ;; so either we don't have any credentials or they are not verified
-  (or (empty? (:current-route db))
+  (or (empty? (:routes/current-route db))
       (and (not (empty? (:credentials db)))
            (not (get-in db [:credentials :verified?])))))
 
-(re-frame/reg-sub ::is-booting? is-booting?)
+(reg-sub ::is-booting? is-booting?)
 
 (defn credentials [db _] (:credentials db))
-(re-frame/reg-sub ::credentials credentials)
+(reg-sub ::credentials credentials)
 
-(re-frame/reg-sub
+(reg-sub
  ::user
  (fn [_ _] [(subscribe [::credentials])])
  (fn [[credentials] _]
@@ -28,26 +28,12 @@
   [[{:keys [server u p]}] [_ song size]]
   (api/cover-url server {:u u :p p} song size))
 
-(re-frame/reg-sub
+(reg-sub
  ::cover-url
  (fn [_ _] [(subscribe [::credentials])])
  cover-url)
 
-;; current hashbang
-
-(re-frame/reg-sub
- ::current-route
- (fn [db _]
-   (:current-route db)))
-
-;; TODO: Make this nice and clean
-
-(re-frame/reg-sub
- ::current-content
- (fn [db _]
-   (:response db)))
-
 ;; user notifications
 
 (defn notifications [db _] (:notifications db))
-(re-frame/reg-sub ::notifications notifications)
+(reg-sub ::notifications notifications)
