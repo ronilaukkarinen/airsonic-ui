@@ -1,7 +1,7 @@
 (ns airsonic-ui.api.helpers-test
   (:require [cljs.test :refer [deftest testing is]]
             [clojure.string :as str]
-            [airsonic-ui.fixtures :refer [responses]]
+            [airsonic-ui.fixtures :as fixtures :refer [responses]]
             [airsonic-ui.api.helpers :as api]))
 
 (defn- url
@@ -61,3 +61,13 @@
   (testing "Should pass on good responses"
     (is (false? (api/is-error? (:ok responses))))
     (is (false? (api/is-error? (:auth-success responses))))))
+
+(deftest content-type
+  (testing "Should detect whether the data we look at represents a song"
+    (is (= :content-type/song (api/content-type fixtures/song))))
+  (testing "Should detect whether the data we look at represents an artist"
+    (is (= :content-type/artist (api/content-type fixtures/artist)))
+    (is (= :content-type/artist (api/content-type (dissoc fixtures/artist :coverArt)))))
+  (testing "Should detect whether the data we look at represents an album"
+    (is (= :content-type/album (api/content-type fixtures/album)))
+    (is (= :content-type/album (api/content-type (dissoc fixtures/album :coverArt))))))

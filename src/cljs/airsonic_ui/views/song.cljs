@@ -7,9 +7,9 @@
 (defn item [songs song idx]
   (let [artist-id (:artistId song)]
     [:div
-     [:a
-      (when artist-id {:href (url-for ::routes/artist-view {:id artist-id})})
-      (:artist song)]
+     (if artist-id
+       [:a {:href (url-for ::routes/artist-view {:id artist-id})} (:artist song)]
+       (:artist song))
      " - "
      [:a
       {:href "#" :on-click (dispatch [::events/play-songs songs idx])}
