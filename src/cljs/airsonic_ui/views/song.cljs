@@ -1,5 +1,5 @@
 (ns airsonic-ui.views.song
-  (:require [airsonic-ui.utils.helpers :refer [dispatch]]
+  (:require [airsonic-ui.helpers :refer [dispatch]]
             [airsonic-ui.events :as events]
             [airsonic-ui.routes :as routes :refer [url-for]]
             [airsonic-ui.views.icon :refer [icon]]))

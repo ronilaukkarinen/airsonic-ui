@@ -20,6 +20,12 @@
     (is (string? (re-find #"f=json" (fixtures :default-url))))
     (is (string? (re-find #"v=1\.15\.0" (fixtures :default-url))))))
 
+(deftest parameter-encoding
+  (testing "Should escape url parameters"
+    (let [query "äöüß"
+          encoded-str (js/encodeURIComponent query)]
+      (is (str/includes? (api/url "http://localhost" "search3" {:query query}) encoded-str)))))
+
 (deftest song-urls
   (testing "Should construct the url based on a song's id"
     (let [song {:id 1234}]
@@ -46,7 +52,7 @@
       (try
         (api/unwrap-response error-response)
         (catch ExceptionInfo e
-          (= (:error error-response) (ex-data e)))))))
+          (is (= (get-in error-response [:subsonic-response :error]) (ex-data e))))))))
 
 (deftest error-recognition
   (testing "Should detect error responses"
