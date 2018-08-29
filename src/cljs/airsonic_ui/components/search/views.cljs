@@ -46,7 +46,7 @@
 
 (defn results [{:keys [search]}]
   (let [term @(subscribe [:search/current-term])]
-    [:div
+    [:section.section>div.container
      [:h2.title (str "Search results for \"" term "\"")]
      (if (empty? search)
        [:p "The server returned no results."]

@@ -25,13 +25,14 @@
   [{:keys [artist artist-info]}]
   [:div
    [:section.hero>div.hero-body
-    [:h2.title (:name artist)]
-    [:div.content
-     [lastfm-bio artist-info]
-     (when-not (empty? (select-keys artist-info [:lastFmUrl :musicBrainzId]))
-       [:div.field.is-grouped
-        (when (:lastFmUrl artist-info)
-          [lastfm-link artist-info])
-        (when (:musicBrainzId artist-info)
-          [musicbrainz-link artist-info])])]]
-   [:section.section [album/listing (:album artist)]]])
+    [:div.container
+     [:h2.title (:name artist)]
+     [:div.content
+      [lastfm-bio artist-info]
+      (when-not (empty? (select-keys artist-info [:lastFmUrl :musicBrainzId]))
+        [:div.field.is-grouped
+         (when (:lastFmUrl artist-info)
+           [lastfm-link artist-info])
+         (when (:musicBrainzId artist-info)
+           [musicbrainz-link artist-info])])]]]
+   [:section.section>div.container [album/listing (:album artist)]]])

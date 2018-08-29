@@ -47,12 +47,14 @@
                                 :max-pages 5
                                 :url-fn #(url-for ::routes/library {:criteria criteria} {:page %})}]]
     [:div
-     [:h2.title "Your library"]
-     (if (:count scan-status)
-       [:p.subtitle.is-5.has-text-grey "Containing " [:strong (:count scan-status)] " items"]
-       (when (:scanning scan-status)
-         [:p.subtitle.is-5.has-text-grey "Scanning…"]))
-     [tabs {:items tab-items :active-item {:criteria criteria}}]
-     pagination
-     [:section.section [album/listing (:album album-list)]]
-     pagination]))
+     [:section.hero.is-small>div.hero-body>div.container
+      [:h2.title "Your library"]
+      (if (:count scan-status)
+        [:p.subtitle.is-5.has-text-grey "Containing " [:strong (:count scan-status)] " items"]
+        (when (:scanning scan-status)
+          [:p.subtitle.is-5.has-text-grey "Scanning…"]))]
+     [:section.section>div.container
+      [tabs {:items tab-items :active-item {:criteria criteria}}]
+      pagination
+      [:section.section [album/listing (:album album-list)]]
+      pagination]]))

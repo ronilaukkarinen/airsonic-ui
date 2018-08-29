@@ -6,6 +6,7 @@
   [{:keys [album]}]
   [:div
    [:section.hero>div.hero-body
-    [:h2.title (:name album)]
-    [:h3.subtitle (:artist album)]]
-   [:section.section [song/listing (:song album)]]])
+    [:div.container
+     [:h2.title (:name album)]
+     [:h3.subtitle (:artist album)]]]
+   [:section.section>div.container [song/listing (:song album)]]])

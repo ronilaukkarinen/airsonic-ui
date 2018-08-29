@@ -102,20 +102,11 @@
 
 (re-frame/reg-event-fx :credentials/authentication-success authentication-success)
 
-;; TODO: We have to find another solution for this once we have routes that
-;; don't require a login but have the bottom controls
-
-(re-frame/reg-fx
- :show-nav-bar
- (fn [_]
-   (.. js/document -documentElement -classList (add "has-navbar-fixed-bottom"))))
-
 (defn logged-in
   [cofx _]
   (let [redirect (or (get-in cofx [:routes/from-query-param :redirect])
                      [::routes/library])]
-    {:dispatch [:routes/do-navigation redirect]
-     :show-nav-bar nil}))
+    {:dispatch [:routes/do-navigation redirect]}))
 
 (re-frame/reg-event-fx
  ::logged-in

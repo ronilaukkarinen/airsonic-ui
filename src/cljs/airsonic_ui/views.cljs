@@ -16,51 +16,53 @@
             [airsonic-ui.components.artist.views :as artist]
             [airsonic-ui.components.collection.views :as collection]))
 
-(defn sidebar [user]
-  [:aside.menu.section
-   [search/form]
-   [:p.menu-label "Music"]
-   [:ul.menu-list
-    [:li [:a "By artist"]]
-    [:li [:a "Top rated"]]
-    [:li [:a "Most played"]]]
-   [:p.menu-label "Playlists"]
-   [:p.menu-label "Shares"]
-   [:p.menu-label "Podcasts"]
-   [:p.menu-label "User area"]
-   [:ul.menu-list
-    [:li [:a "Settings"]]
-    [:li [:a
-          {:on-click #(dispatch [::events/logout]) :href "#"}
-          (str "Logout (" (:name user) ")")]]]])
+(def logo-url "./img/airsonic-light-350x100.png")
 
-(defn app [route-id params query]
-  (let [user @(subscribe [::subs/user])
-        ;; TODO: Move this to a layer 3 subscription ↓
+(defn navbar-top
+  "Contains search, some navigational links and the logo"
+  [{:keys [user]}]
+  [:nav.navbar.is-fixed-top.is-dark
+   [:div.navbar-brand
+    [:div.navbar-item>img {:src logo-url}]]
+   ;; user is `nil` when we're not logged in, we can hide the extended navbar
+   (when user
+     [:div.navbar-menu
+      [:div.navbar-start
+       [:div.navbar-item [search/form]]]
+      [:div.navbar-end
+       [:div.navbar-divider]
+       [:a.navbar-item
+        {:on-click #(dispatch [::events/logout]) :href "#"}
+        (str "Logout (" (:name user) ")")]]])])
+
+(defn media-content
+  "Provides the complete UI to browse the media library, interact with search
+  results etc"
+  [route-id params query]
+  (let [;; TODO: Move this to a layer 3 subscription ↓
         route-events @(subscribe [:routes/events-for-current-route])
         content @(subscribe [:api/route-data route-events])]
     [:div
-     [:main.columns
-      [:div.column.is-2.sidebar
-       [sidebar user]]
-      [:div.column.is-10
-       [:section.section
-        [breadcrumbs content]
-        (case route-id
-          ::routes/library [library/main [route-id params query] content]
-          ::routes/artist-view [artist/detail content]
-          ::routes/album-view [collection/detail content]
-          ::routes/search [search/results content])]]]
+     [:section.section
+      [breadcrumbs content]
+      (case route-id
+        ::routes/library [library/main [route-id params query] content]
+        ::routes/artist-view [artist/detail content]
+        ::routes/album-view [collection/detail content]
+        ::routes/search [search/results content])]
      [audio-player]]))
 
 (defn main-panel []
   (let [notifications @(subscribe [::subs/notifications])
         is-booting? @(subscribe [::subs/is-booting?])
-        [route-id params query] @(subscribe [:routes/current-route])]
+        [route-id params query] @(subscribe [:routes/current-route])
+        user @(subscribe [::subs/user])]
     [(add-classes :div route-id)
      [notification-list notifications]
      (if is-booting?
        [:div.app-loading>div.loader]
-       (case route-id
-         ::routes/login [login-form]
-         [app route-id params query]))]))
+       [:div
+        [navbar-top {:user user}]
+        (case route-id
+          ::routes/login [login-form]
+          [media-content route-id params query])])]))
