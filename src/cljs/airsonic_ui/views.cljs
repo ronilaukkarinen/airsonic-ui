@@ -1,4 +1,6 @@
 (ns airsonic-ui.views
+  "This module contains the outmost layer of our app views. It makes sure that
+  the proper subscriptions are run and arranges the complete layout."
   (:require [re-frame.core :refer [dispatch subscribe]]
             [airsonic-ui.routes :as routes :refer [url-for]]
             [airsonic-ui.events :as events]
@@ -9,23 +11,10 @@
             [airsonic-ui.views.breadcrumbs :refer [breadcrumbs]]
             [airsonic-ui.views.audio-player :refer [audio-player]]
             [airsonic-ui.views.login :refer [login-form]]
-            [airsonic-ui.views.album :as album]
-            [airsonic-ui.views.song :as song]
             [airsonic-ui.components.search.views :as search]
-            [airsonic-ui.components.library.views :as library]))
-
-;; TODO: Find better names and places for these.
-
-(defn album-detail [{:keys [album]}]
-  [:div
-   [:h2.title (str (:artist album) " - " (:name album))]
-   [song/listing (:song album)]])
-
-(defn artist-detail [{:keys [artist artist-info]}]
-  [:div
-   [:h2.title (:name artist)]
-   [:div.content>p {:dangerouslySetInnerHTML {:__html (:biography artist-info)}}]
-   [album/listing (:album artist)]])
+            [airsonic-ui.components.library.views :as library]
+            [airsonic-ui.components.artist.views :as artist]
+            [airsonic-ui.components.collection.views :as collection]))
 
 (defn sidebar [user]
   [:aside.menu.section
@@ -45,8 +34,6 @@
           {:on-click #(dispatch [::events/logout]) :href "#"}
           (str "Logout (" (:name user) ")")]]]])
 
-;; putting everything together
-
 (defn app [route-id params query]
   (let [user @(subscribe [::subs/user])
         ;; TODO: Move this to a layer 3 subscription ↓
@@ -61,8 +48,8 @@
         [breadcrumbs content]
         (case route-id
           ::routes/library [library/main [route-id params query] content]
-          ::routes/artist-view [artist-detail content]
-          ::routes/album-view [album-detail content]
+          ::routes/artist-view [artist/detail content]
+          ::routes/album-view [collection/detail content]
           ::routes/search [search/results content])]]]
      [audio-player]]))
 
