@@ -1,8 +1,16 @@
 (ns airsonic-ui.components.artist.views
-  (:require [airsonic-ui.views.album :as album]))
+  (:require [airsonic-ui.views.album :as album]
+            [clojure.string :as str]))
 
 (defn link-button [attrs children]
   [:p.control>a.button.is-small (merge attrs {:target "_blank"}) children])
+
+(defn lastfm-bio
+  "Displays the last.fm biography without the 'Read more on Last.fm' link"
+  [artist-info]
+  (when (:biography artist-info)
+    (let [biography (str/replace (:biography artist-info) #"<a .*?>$" "")]
+      [:p {:dangerouslySetInnerHTML {:__html biography}}])))
 
 (defn lastfm-link [artist-info]
   [link-button {:href (:lastFmUrl artist-info)} "See on last.fm"])
@@ -19,7 +27,7 @@
    [:section.hero>div.hero-body
     [:h2.title (:name artist)]
     [:div.content
-     [:p {:dangerouslySetInnerHTML {:__html (:biography artist-info)}}]
+     [lastfm-bio artist-info]
      (when-not (empty? (select-keys artist-info [:lastFmUrl :musicBrainzId]))
        [:div.field.is-grouped
         (when (:lastFmUrl artist-info)
