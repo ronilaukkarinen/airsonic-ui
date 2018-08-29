@@ -9,8 +9,8 @@
 
             [airsonic-ui.views.notifications :refer [notification-list]]
             [airsonic-ui.views.breadcrumbs :refer [breadcrumbs]]
-            [airsonic-ui.views.audio-player :refer [audio-player]]
             [airsonic-ui.views.login :refer [login-form]]
+            [airsonic-ui.components.audio-player.views :refer [audio-player]]
             [airsonic-ui.components.search.views :as search]
             [airsonic-ui.components.library.views :as library]
             [airsonic-ui.components.artist.views :as artist]
