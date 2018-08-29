@@ -21,7 +21,7 @@
 (defn navbar-top
   "Contains search, some navigational links and the logo"
   [{:keys [user]}]
-  [:nav.navbar.is-fixed-top.is-dark
+  [:nav.navbar.is-fixed-top.is-dark {:role "navigation", :aria-label "search and navigation"}
    [:div.navbar-brand
     [:div.navbar-item>img {:src logo-url}]]
    ;; user is `nil` when we're not logged in, we can hide the extended navbar
@@ -30,10 +30,21 @@
       [:div.navbar-start
        [:div.navbar-item [search/form]]]
       [:div.navbar-end
-       [:div.navbar-divider]
-       [:a.navbar-item
-        {:on-click #(dispatch [::events/logout]) :href "#"}
-        (str "Logout (" (:name user) ")")]]])])
+       [:div.navbar-item.has-dropdown.is-hoverable
+        [:div.navbar-link "Library"]
+        [:div.navbar-dropdown
+         [:a.navbar-item {:href (url-for ::routes/library {:criteria "recent"})} "Recently played"]
+         [:a.navbar-item {:href (url-for ::routes/library {:criteria "newest"})} "Newest additions"]
+         [:a.navbar-item {:href (url-for ::routes/library {:criteria "starred"})} "Starred"]]]
+       [:a.navbar-item {} "Podcasts"]
+       [:a.navbar-item {} "Shares"]
+       [:div.navbar-item.has-dropdown.is-hoverable
+        [:div.navbar-link "More"]
+        [:div.navbar-dropdown.is-right
+         [:a.navbar-item {:disabled true} "Settings"]
+         [:a.navbar-item
+          {:on-click #(dispatch [::events/logout]) :href "#"}
+          (str "Logout (" (:name user) ")")]]]]])])
 
 (defn media-content
   "Provides the complete UI to browse the media library, interact with search
