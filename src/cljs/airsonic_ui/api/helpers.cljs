@@ -17,8 +17,10 @@
                    (str/join "&"))]
     (str server (when-not (str/ends-with? server "/") "/") "rest/" endpoint "?" query)))
 
-(defn song-url [server credentials song]
-  (url server "stream" (merge (select-keys song [:id]) credentials)))
+(defn stream-url [server credentials song-or-episode]
+  ;; podcasts have a stream-id, normal songs just use their id
+  (let [params {:id (or (:streamId song-or-episode) (:id song-or-episode))}]
+    (url server "stream" (merge params credentials))))
 
 (defn cover-url [server credentials item size]
   (url server "getCoverArt" (merge {:id (:coverArt item) :size size} credentials)))

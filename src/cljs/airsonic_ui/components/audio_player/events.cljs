@@ -3,9 +3,9 @@
             [airsonic-ui.audio.playlist :as playlist]
             [airsonic-ui.api.helpers :as api]))
 
-(defn- song-url [db song]
+(defn- stream-url [db song]
   (let [creds (:credentials db)]
-    (api/song-url (:server creds) (select-keys creds [:u :p]) song)))
+    (api/stream-url (:server creds) (select-keys creds [:u :p]) song)))
 
 (re-frame/reg-event-fx
  ; sets up the db, starts to play a song and adds the rest to a playlist
@@ -13,7 +13,7 @@
  (fn [{:keys [db]} [_ songs start-idx]]
    (let [playlist (-> (playlist/->playlist songs :playback-mode :linear :repeat-mode :repeat-all)
                       (playlist/set-current-song start-idx))]
-     {:audio/play (song-url db (playlist/peek playlist))
+     {:audio/play (stream-url db (playlist/peek playlist))
       :db (assoc-in db [:audio :playlist] playlist)})))
 
 ;; FIXME: :audio/play might not get the right argument here
@@ -34,7 +34,7 @@
    (let [db (update-in db [:audio :playlist] playlist/next-song)
          next (playlist/peek (get-in db [:audio :playlist]))]
      {:db db
-      :audio/play (song-url db next)})))
+      :audio/play (stream-url db next)})))
 
 (re-frame/reg-event-fx
  :audio-player/previous-song
@@ -42,7 +42,7 @@
    (let [db (update-in db [:audio :playlist] playlist/previous-song)
          prev (playlist/peek (get-in db [:audio :playlist]))]
      {:db db
-      :audio/play (song-url db prev)})))
+      :audio/play (stream-url db prev)})))
 
 (re-frame/reg-event-db
  :audio-player/enqueue-next

@@ -26,10 +26,13 @@
           encoded-str (js/encodeURIComponent query)]
       (is (str/includes? (api/url "http://localhost" "search3" {:query query}) encoded-str)))))
 
-(deftest song-urls
+(deftest stream-urls
   (testing "Should construct the url based on a song's id"
-    (let [song {:id 1234}]
-      (is (true? (str/includes? (api/song-url "http://localhost" {} song) (str "id=" (:id song))))))))
+    (let [stream-url (api/stream-url "http://localhost" {} fixtures/song)]
+      (is (str/includes? stream-url (str "id=" (:id fixtures/song))))))
+  (testing "Should also work for podcasts"
+    (let [stream-url (api/stream-url "http://localhost" {} fixtures/podcast-episode)]
+      (is (str/includes? stream-url (str "id=" (:streamId fixtures/podcast-episode)))))))
 
 (deftest cover-urls
   (let [album {:coverArt "cover-99999"}]

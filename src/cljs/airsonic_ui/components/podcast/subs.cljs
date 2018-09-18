@@ -5,13 +5,15 @@
 (reg-sub
  ::podcast.response
  :<- [:api/response-for "getPodcasts"]
- :channel)
+ (fn [response]
+   (:channel response)))
 
 (defn podcast-channels
   "Given a podcast response, returns information about the channels that have
   been subscribed to."
   [response _]
-  (map #(dissoc % :episode) response))
+  (when response
+    (map #(dissoc % :episode) response)))
 
 (reg-sub
  ::podcast.channels
