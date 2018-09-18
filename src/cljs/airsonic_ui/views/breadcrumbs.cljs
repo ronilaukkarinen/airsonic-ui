@@ -12,7 +12,7 @@
     #{:artist :artist-info} :artist
     #{:album} :album
     #{:search} :search
-    #{:channel} :podcast
+    #{:podcasts} :podcast
     :other-content))
 
 (defn- bulma-breadcrumbs [& items]
