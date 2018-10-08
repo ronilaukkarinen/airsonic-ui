@@ -14,7 +14,8 @@
              ["/search" ::search]
              ["/podcast" ::podcast.overview]
              ["/podcast/:id" ::podcast.detail]
-             ["/currently-playing" ::currently-playing]]))
+             ["/current-queue" ::current-queue]
+             ["/about" ::about]]))
 
 ;; use this in views to construct a url
 (defn url-for

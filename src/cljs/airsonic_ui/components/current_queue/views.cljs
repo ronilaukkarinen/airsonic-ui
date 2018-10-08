@@ -1,11 +1,11 @@
-(ns airsonic-ui.components.currently-playing.views
+(ns airsonic-ui.components.current-queue.views
   (:require [re-frame.core :refer [subscribe]]
             [airsonic-ui.views.song :as song]
             [airsonic-ui.routes :as r]))
 
-(defn currently-playing []
+(defn current-queue []
   [:section.section>div.container
-   [:h1.title "Currently Playing"]
+   [:h1.title "Current Queue"]
    (if-let [playlist @(subscribe [:audio/playlist])]
      [song/listing (:queue playlist)]
      [:p "You are currently not playing anything. Use the search or go to your "

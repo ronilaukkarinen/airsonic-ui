@@ -48,9 +48,11 @@
     .level-right
       display: flex
 
-      .buttons-start,
-      .buttons-end
+      .button-group
         margin: 0 .5rem
+
+        + .button-group
+          margin-left: 0
 
       =tablet
         flex-grow: 0
@@ -58,16 +60,11 @@
         padding-left: .5rem
         padding-right: .5rem
 
-        .buttons-start
-          margin-left: .75rem
-
   .media
     flex-grow: 1
     align-items: center
 
   .current-song-info
-    a
-      color: inherit
     progress
       width: 100%
 

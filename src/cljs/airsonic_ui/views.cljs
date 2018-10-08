@@ -13,11 +13,12 @@
             [airsonic-ui.views.login :refer [login-form]]
             [airsonic-ui.views.icon :refer [icon]]
 
+            [airsonic-ui.components.about.views :refer [about]]
             [airsonic-ui.components.artist.views :as artist]
             [airsonic-ui.components.audio-player.views :refer [audio-player]]
             [airsonic-ui.components.bangpow.views :refer [not-found]]
             [airsonic-ui.components.collection.views :as collection]
-            [airsonic-ui.components.currently-playing.views :refer [currently-playing]]
+            [airsonic-ui.components.current-queue.views :refer [current-queue]]
             [airsonic-ui.components.library.views :as library]
             [airsonic-ui.components.podcast.views :as podcast]
             [airsonic-ui.components.search.views :as search]))
@@ -66,7 +67,8 @@
         [:div.navbar-start
          [:div.navbar-item [search/form]]]
         [:div.navbar-end
-         [:a.navbar-item {:href (url-for ::routes/currently-playing)} [icon :audio]]
+         [:a.navbar-item {:href (url-for ::routes/current-queue)
+                          :title "Current queue"} [icon :audio]]
          (when stream-role
            [navbar-dropdown "Library"
             [[{:href (url-for ::routes/library {:criteria "recent"})} "Recently played"]
@@ -83,8 +85,9 @@
          [:div.navbar-item.has-dropdown.is-hoverable
           [:div.navbar-link "More"]
           [:div.navbar-dropdown.is-right
-           #_(when settings-role
-             [navbar-item {} "Settings"])
+           (when settings-role
+             #_[navbar-item {} "Settings"])
+           [:a.navbar-item {:href (url-for ::routes/about)} "About"]
            [:a.navbar-item
             {:on-click (fn [_]
                          (toggle-navbar-active!)
@@ -113,7 +116,8 @@
         ::routes/search [search/results content]
         ::routes/podcast.overview [podcast/overview content]
         ::routes/podcast.detail [podcast/detail content]
-        ::routes/currently-playing [currently-playing]
+        ::routes/current-queue [current-queue]
+        ::routes/about [about]
         [not-found])]
      [audio-player]]))
 
