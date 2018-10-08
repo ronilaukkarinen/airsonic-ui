@@ -21,7 +21,7 @@
  podcast-channels)
 
 (defn sorted-podcast-episodes
-  "Given a podcast response, returns all episodes sorted by a given function"
+  "Given a response of all podcasts, returns all episodes sorted by a given function"
   [response [_ key-fn & {:keys [n reverse?]
                          :or {n 15
                               reverse? true}}]]
@@ -34,6 +34,19 @@
       (take n (if reverse? (reverse sorted) sorted)))))
 
 (reg-sub
- ::podcast.episodes-by
+ ::podcast.all-episodes-by
  :<- [::podcast.response]
  sorted-podcast-episodes)
+
+(defn podcast-detail
+  "Since there's no real detail request, this function provides some abstraction
+  for that in providing a lense to only the podcast with a specific channel-id."
+  [[response [_ params _]] _]
+  (let [channel-id (:id params)]
+    (first (filter #(= channel-id (:id %)) response))))
+
+(reg-sub
+ ::podcast.detail-from-route
+ :<- [::podcast.response]
+ :<- [:routes/current-route]
+ podcast-detail)

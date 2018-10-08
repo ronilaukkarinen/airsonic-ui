@@ -3,11 +3,10 @@
             [airsonic-ui.helpers :refer [muted-dispatch]]
             [airsonic-ui.routes :as routes :refer [url-for]]
             [airsonic-ui.components.podcast.subs :as subs]
-            [airsonic-ui.views.cover :refer [card]]
+            [airsonic-ui.views.cover :refer [cover card]]
             [airsonic-ui.views.icon :refer [icon]]
             [airsonic-ui.components.debug.views :refer [debug]]))
 
-;; TODO: Actually play single episodes
 ;; TODO: Implement detail pages for podcasts
 ;; TODO: Implement CRUD frontend for podcasts
 ;; TODO: Error handling for channels and episodes
@@ -37,7 +36,9 @@
      [:td>a {:title "Play last"
              :href "#"
              :on-click (muted-dispatch [:audio-player/enqueue-last episode])}
-      [icon :caret-right]]]))
+      [icon :caret-right]]]
+    "skipped" ;; FIXME: Show download button
+    [[:td] [:td]]))
 
 (defn- episode-list [episodes]
   [:table.table.is-striped.is-hoverable.is-fullwidth>tbody
@@ -55,12 +56,28 @@
                    (:title episode)]]]]
       (episode-actions episode)))])
 
-(defn overview [_]
+(defn detail
+  "Detail page for a single channel"
+  [_]
+  ;; NOTE: This isn't especially pretty, but it works. The detail page can only
+  ;; ever be displayed for the podcast the current route points to
+  (let [channel @(subscribe [::subs/podcast.detail-from-route])]
+    [:div
+     [:section.section>div.hero-body
+      [:div.container>article.media
+       [:div.media-left [cover channel 128]]
+       [:div.media-content
+        [:h2.title (:title channel)]
+        [:p (:description channel)]]]]
+     [:section.section>div.container [episode-list (:episode channel)]]]))
+
+(defn overview
+  "All channels and most recently published shows"
+  [_]
   (let [channels @(subscribe [::subs/podcast.channels])
-        episodes @(subscribe [::subs/podcast.episodes-by :created])]
+        episodes @(subscribe [::subs/podcast.all-episodes-by :created])]
     [:section.section>div.container
      [:h1.title "Subscriptions"]
      [channel-overview channels]
      [:h1.title "Latest Episodes"]
-     [debug episodes]
      [episode-list episodes]]))

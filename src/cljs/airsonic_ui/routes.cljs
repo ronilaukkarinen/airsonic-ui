@@ -63,6 +63,11 @@
   [route-id params query]
   [[:api/request "getPodcasts"]])
 
+(defmethod -route-events ::podcast.detail
+  [route-id params query]
+  ;; this is identical to ::podcast.overview on purpose
+  [[:api/request "getPodcasts"]])
+
 ;; shouldn't need to change anything below
 
 (defn- n-events?

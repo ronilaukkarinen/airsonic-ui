@@ -106,7 +106,8 @@
         ::routes/artist.detail [artist/detail content]
         ::routes/album.detail [collection/detail content]
         ::routes/search [search/results content]
-        ::routes/podcast.overview [podcast/overview content])]
+        ::routes/podcast.overview [podcast/overview content]
+        ::routes/podcast.detail [podcast/detail content])]
      [audio-player]]))
 
 (defn main-panel
