@@ -12,13 +12,15 @@
             [airsonic-ui.views.breadcrumbs :refer [breadcrumbs]]
             [airsonic-ui.views.login :refer [login-form]]
             [airsonic-ui.views.icon :refer [icon]]
-            [airsonic-ui.components.audio-player.views :refer [audio-player]]
-            [airsonic-ui.components.search.views :as search]
-            [airsonic-ui.components.library.views :as library]
+
             [airsonic-ui.components.artist.views :as artist]
+            [airsonic-ui.components.audio-player.views :refer [audio-player]]
+            [airsonic-ui.components.bangpow.views :refer [not-found]]
             [airsonic-ui.components.collection.views :as collection]
+            [airsonic-ui.components.currently-playing.views :refer [currently-playing]]
+            [airsonic-ui.components.library.views :as library]
             [airsonic-ui.components.podcast.views :as podcast]
-            [airsonic-ui.components.bangpow.views :refer [not-found]]))
+            [airsonic-ui.components.search.views :as search]))
 
 (def logo-url "./img/airsonic-light-350x100.png")
 
@@ -64,7 +66,7 @@
         [:div.navbar-start
          [:div.navbar-item [search/form]]]
         [:div.navbar-end
-         [:div.navbar-item>a {:href (url-for ::routes/currently-playing)} [icon :audio]]
+         [:a.navbar-item {:href (url-for ::routes/currently-playing)} [icon :audio]]
          (when stream-role
            [navbar-dropdown "Library"
             [[{:href (url-for ::routes/library {:criteria "recent"})} "Recently played"]
@@ -111,6 +113,7 @@
         ::routes/search [search/results content]
         ::routes/podcast.overview [podcast/overview content]
         ::routes/podcast.detail [podcast/detail content]
+        ::routes/currently-playing [currently-playing]
         [not-found])]
      [audio-player]]))
 

@@ -1,5 +1,6 @@
 (ns airsonic-ui.components.audio-player.views
   (:require [re-frame.core :refer [subscribe]]
+            [airsonic-ui.routes :as routes]
             [airsonic-ui.helpers :refer [add-classes muted-dispatch]]
             [airsonic-ui.views.cover :refer [cover]]
             [airsonic-ui.views.icon :refer [icon]]))
@@ -7,8 +8,9 @@
 ;; currently playing / coming next / audio controls...
 
 (defn current-song-info [song status]
-  [:article
-   [:div (:artist song) " - " (:title song)]
+  [:article.current-song-info
+   [:a {:href (routes/url-for ::routes/currently-playing)
+        :title "Go to current queue"} (:artist song) " - " (:title song)]
    ;; FIXME: Sometimes items don't have a duration
    [:progress.progress.is-tiny {:value (:current-time status)
                                 :max (:duration song)}]])
